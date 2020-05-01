@@ -91,7 +91,10 @@ fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
 .PHONY: deps
 deps: ; $(info $(M) installing dependencies...) @ ## Installs dependencies
 	$Q ./scripts/install-deps.sh
- 
+
+.PHONY: gen
+gen: deps ; $(info $(M) generating code...) @ ## Generated protobuf code
+	$Q ./scripts/generate.sh
 # Misc
 
 .PHONY: clean
