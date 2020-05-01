@@ -88,6 +88,10 @@ lint: | $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
 fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
 	$Q $(GO) fmt $(PKGS)
 
+.PHONY: deps
+deps: ; $(info $(M) installing dependencies...) @ ## Installs dependencies
+	$Q ./scripts/install-deps.sh
+ 
 # Misc
 
 .PHONY: clean
