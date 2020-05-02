@@ -1,4 +1,5 @@
 bin
 vendor
 *.log
+.env
 internal/generated

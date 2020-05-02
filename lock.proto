@@ -4,16 +4,6 @@ option go_package = "internal/generated";
 
 package lock;
 
-// Resource describes the type of resource the lock will be holding
-enum Resource {
-  UNDEFINED = 0;
-  FILE = 1;
-  DATAROOM = 2;
-  STRUCTURE = 3;
-  FOLDER = 4;
-  USER = 5;
-}
-
 // ResponseStatus is the return code for every request.
 // If the request succeeded OK (1) will be sent out
 // otherwise FAIL (0)
@@ -22,19 +12,8 @@ enum ResponseStatus {
   OK = 1;
 }
 
-// RequestType describes the request intent
-enum RequestType {
-  UNKNOWN = 0;
-  GET = 1;
-  REFRESH = 2;
-  DELETE = 3;
-  CHECK = 4;
-}
-
 // LockRequest is a generic container for request parameters
 message LockRequest {
-  RequestType request_type = 1;
-  Resource resource_type = 2;
   string resource_id = 3;
   string lock_id = 4;
   uint32 ttl = 5;
@@ -43,7 +22,6 @@ message LockRequest {
 // LockResponse is a generic container for response values
 message LockResponse {
   ResponseStatus status = 1;
-  Resource resource_type = 2;
   string resource_id = 3;
   string lock_id = 4;
   uint32 ttl = 5;
@@ -53,5 +31,4 @@ service Lock {
   rpc GetLock(LockRequest) returns (LockResponse) {};
   rpc RefreshLock(LockRequest) returns (LockResponse) {};
   rpc DeleteLock(LockRequest) returns (LockResponse) {};
-  rpc CheckLock(LockRequest) returns (LockResponse) {};
 }
