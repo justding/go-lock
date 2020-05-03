@@ -17,7 +17,7 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 export GO111MODULE=on
 
 .PHONY: all
-all: fmt | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
+all: fmt lint | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
 	$Q $(GO) build \
 		-ldflags '-X main.Version=$(VERSION) -X main.BuildDate=$(DATE)' \
 		-tags release \

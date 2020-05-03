@@ -14,14 +14,17 @@ func init() {
 	}
 }
 
+// RedlockConfig holds a slice with the addresses for all redis instances
 type RedlockConfig struct {
 	Clients []string
 }
 
+// Manager represents a struct holding all application config info
 type Manager struct {
 	Redlock RedlockConfig
 }
 
+// NewManager return a pointer to the new Manager instance
 func NewManager() *Manager {
 	return &Manager{
 		Redlock: RedlockConfig{
