@@ -1,12 +1,19 @@
 package main
 
 import (
-	"go-lock/internal/config"
+	"github.com/stoex/go-lock/internal/config"
 	"log"
 )
 
-var configuration = config.NewManager()
+var (
+	// Version denotes the program version
+	Version string
+	// BuildDate denotes the build date
+	BuildDate     string
+	configuration = config.NewManager()
+)
 
 func main() {
+	log.Printf("go-lock :: version %s :: build date %s", Version, BuildDate)
 	log.Println(configuration.Redlock.Clients)
 }

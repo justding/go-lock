@@ -1,4 +1,4 @@
-module go-lock
+module github.com/stoex/go-lock
 
 go 1.14
 
