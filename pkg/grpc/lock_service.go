@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	pb "go-lock/internal/generated"
+	pb "github.com/stoex/go-lock/internal/generated"
 )
 
 // LockService represents a grpc service hanlder

@@ -17,7 +17,7 @@ fi
 
 if ! [[ -x "$(command -v protoc-gen-go)" ]]; then
     echo 'installing protoc-gen-go utility...'
-    go install google.golang.org/protobuf/cmd/protoc-gen-go
+    go install github.com/golang/protobuf/protoc-gen-go
 else
     echo 'protoc-gen-go already installed!'
 fi
