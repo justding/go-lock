@@ -28,12 +28,9 @@ func newTestRedisNode() *redismock.ClientMock {
 func newTestRedlock() (*Redlock, error) {
 	mocks := []*redismock.ClientMock{newTestRedisNode(), newTestRedisNode(), newTestRedisNode()}
 
-	manager, err := NewRedlock(mocks[0])
-	if err != nil {
-		return nil, err
-	}
-	for i := 1; i < 3; i++ {
-		if err = manager.AddClient(mocks[i]); err != nil {
+	manager := NewRedlock()
+	for i := 0; i < len(mocks); i++ {
+		if err := manager.AddRedisClient(mocks[i]); err != nil {
 			return nil, err
 		}
 	}
@@ -170,4 +167,38 @@ func TestRedlock_RefreshFailQuorum(t *testing.T) {
 	ttl, err := redlock.Refresh(testResourceID, testLockID, testTTL)
 	assert.Equal(t, 0, int(ttl), "refresh ttl should be 0")
 	assert.Error(t, err, "refresh should return an error")
+}
+
+func TestRedlock_CheckLock(t *testing.T) {
+	redlock, err := newTestRedlock()
+	if err != nil {
+		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
+	}
+
+	_, err = redlock.Lock(testResourceID, testLockID, testTTL)
+
+	if err != nil {
+		t.Fatal(fmt.Sprintf("could not create a lock: %s", err.Error()))
+	}
+
+	l, err := redlock.Check(testResourceID)
+
+	if err != nil {
+		t.Fatal(fmt.Sprintf("check lock failed: %s", err.Error()))
+	}
+
+	assert.NotNil(t, l, "lock details should not be nil")
+	assert.Equal(t, testResourceID, l.Resource, "returned resource should match")
+	assert.Equal(t, testLockID, l.ID, "returned lock value should match")
+	assert.LessOrEqual(t, testTTL, l.TTL, fmt.Sprintf("returned lock ttl (%d) should be less or equal to testTTL (%d)", l.TTL, testTTL))
+}
+
+func TestRedlock_CheckLockError(t *testing.T) {
+	redlock, err := newTestRedlock()
+	if err != nil {
+		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
+	}
+
+	_, err = redlock.Check(testResourceID)
+	assert.Error(t, err, "lock does not exist - check should return an error")
 }

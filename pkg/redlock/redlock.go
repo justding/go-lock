@@ -31,23 +31,31 @@ type Redlock struct {
 	quorum  int
 }
 
-// NewRedlock creates a Redlock
-func NewRedlock(client redis.Cmdable) (*Redlock, error) {
-	if client == nil {
-		return nil, errors.New("client is nil")
-	}
+// Lock describes a structure holding all relevant lock info.
+// Resource is the identifier of what is locked, id is identifying the lock itself
+// and ttl is the remaining time in seconds until the lock expires.
+type Lock struct {
+	// Resource is the identifier for the given resource
+	Resource string
+	// ID is the id of the lock (the value)
+	ID string
+	// TTL is the expiry time for this particular lock
+	TTL int
+}
 
+// NewRedlock creates a Redlock
+func NewRedlock() *Redlock {
 	return &Redlock{
 		retryCount:  DefaultRetryCount,
 		retryDelay:  DefaultRetryDelay,
 		driftFactor: ClockDriftFactor,
 		quorum:      1, // int(math.Floor(float64(1/2)) + 1),
-		clients:     []redis.Cmdable{client},
-	}, nil
+		clients:     nil,
+	}
 }
 
-// AddClient adds a client to the redlock manager
-func (r *Redlock) AddClient(client redis.Cmdable) error {
+// AddRedisClient adds a client to the redlock manager
+func (r *Redlock) AddRedisClient(client redis.Cmdable) error {
 	if client == nil {
 		return errors.New("client is nil")
 	}
@@ -56,6 +64,17 @@ func (r *Redlock) AddClient(client redis.Cmdable) error {
 	r.quorum = int(math.Floor(float64(len(r.clients)/2)) + 1)
 
 	return nil
+}
+
+// AddRedisClientPool adds a pool of redis clients to the redlock manager
+func (r *Redlock) AddRedisClientPool(pool []*redis.Client) {
+	for _, c := range pool {
+		if c != nil {
+			r.clients = append(r.clients, c)
+		}
+	}
+
+	r.quorum = int(math.Floor(float64(len(r.clients)/2)) + 1)
 }
 
 // SetRetryCount sets acquire lock retry count
@@ -125,6 +144,19 @@ func refreshInstance(client redis.Cmdable, resource string, lockID string, ttl i
 		c <- true
 	}
 	c <- false
+}
+
+func checkLockInstance(client redis.Cmdable, resource string, c chan *Lock) {
+	if client == nil {
+		c <- nil
+	}
+	if check := client.Exists(resource); check.Val() == int64(0) {
+		c <- nil
+	}
+
+	id := client.Get(resource).Val()
+	ttl := client.TTL(resource).Val()
+	c <- &Lock{resource, id, int(ttl)}
 }
 
 // Lock acquires a distribute lock
@@ -204,4 +236,27 @@ func (r *Redlock) Refresh(resource string, lockID string, ttl int) (int64, error
 	}
 
 	return 0, fmt.Errorf("failed to refresh lock :: resource %s :: lock id %s", resource, lockID)
+}
+
+// Check checks if the lock exists & returns the lock data
+func (r *Redlock) Check(resource string) (*Lock, error) {
+	for i := 0; i < r.retryCount; i++ {
+		c := make(chan *Lock, len(r.clients))
+
+		for _, cli := range r.clients {
+			go checkLockInstance(cli, resource, c)
+		}
+		for j := 0; j < len(r.clients); j++ {
+			l := <-c
+
+			if l != nil {
+				return l, nil
+			}
+		}
+
+		// Wait a random delay before to retry
+		time.Sleep(time.Duration(rand.Intn(r.retryDelay)) * time.Millisecond)
+	}
+
+	return nil, fmt.Errorf("failed to check lock :: resource %s", resource)
 }
