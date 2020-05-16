@@ -93,7 +93,7 @@ func (r *Redlock) SetRetryDelay(delay int) {
 	r.retryDelay = delay
 }
 
-// SetDriftFactor sets aquire lock drift factor in milliseconds
+// SetDriftFactor sets aquisition lock drift factor in milliseconds
 func (r *Redlock) SetDriftFactor(fac float64) {
 	if fac <= 0 {
 		return
@@ -109,7 +109,7 @@ func lockInstance(client redis.Cmdable, resource string, val string, ttl int, c 
 	if check := client.Exists(resource); check.Val() == int64(1) {
 		c <- false
 	}
-	reply := client.Set(resource, val, time.Duration(ttl)*time.Millisecond)
+	reply := client.Set(resource, val, time.Duration(ttl)*time.Second)
 	if reply.Err() != nil || reply.Val() != "OK" {
 		c <- false
 		return
@@ -137,7 +137,7 @@ func refreshInstance(client redis.Cmdable, resource string, lockID string, ttl i
 		c <- false
 	}
 	if check := client.Get(resource); check.Val() == lockID {
-		reply := client.Set(resource, lockID, time.Duration(ttl)*time.Millisecond)
+		reply := client.Set(resource, lockID, time.Duration(ttl)*time.Second)
 		if reply.Val() != "OK" || reply.Err() != nil {
 			c <- false
 		}
@@ -156,7 +156,7 @@ func checkLockInstance(client redis.Cmdable, resource string, c chan *Lock) {
 
 	id := client.Get(resource).Val()
 	ttl := client.TTL(resource).Val()
-	c <- &Lock{resource, id, int(ttl)}
+	c <- &Lock{resource, id, int(ttl.Seconds())}
 }
 
 // Lock acquires a distribute lock

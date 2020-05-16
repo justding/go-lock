@@ -13,7 +13,7 @@ import (
 const (
 	testResourceID = "resource"
 	testLockID     = "iamalockid"
-	testTTL        = 50000000
+	testTTL        = 50 // seconds
 )
 
 func newTestRedisNode() *redismock.ClientMock {
@@ -25,6 +25,7 @@ func newTestRedisNode() *redismock.ClientMock {
 	return redismock.NewNiceMock(client)
 }
 
+// newTestRedlock returns a mocked redlock instance for testing
 func newTestRedlock() (*Redlock, error) {
 	mocks := []*redismock.ClientMock{newTestRedisNode(), newTestRedisNode(), newTestRedisNode()}
 
@@ -44,7 +45,7 @@ func TestRedlock_Lock(t *testing.T) {
 		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
 	}
 	ttl, err := redlock.Lock(testResourceID, testLockID, testTTL)
-	assert.LessOrEqual(t, int(ttl), testTTL, "ttl should be less than or equal 1000")
+	assert.LessOrEqual(t, int(ttl), testTTL, fmt.Sprintf("returned ttl (%d) should be less than or equal %d", ttl, testTTL))
 }
 
 func TestRedlock_LockFailQuorum(t *testing.T) {
@@ -54,10 +55,10 @@ func TestRedlock_LockFailQuorum(t *testing.T) {
 	}
 	// Mocking responses for the second and third client
 	redlock.clients[0].(*redismock.ClientMock).
-		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Millisecond).
+		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Second).
 		Return(redis.NewStatusResult("0", nil))
 	redlock.clients[1].(*redismock.ClientMock).
-		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Millisecond).
+		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Second).
 		Return(redis.NewStatusResult("0", nil))
 
 	ttl, err := redlock.Lock(testResourceID, testLockID, testTTL)
@@ -73,10 +74,10 @@ func TestRedlock_LockFailAlreadyExists(t *testing.T) {
 	}
 	// Setting the lock values beforehand
 	for _, client := range redlock.clients {
-		client.Set(testResourceID, testLockID, testTTL)
+		client.Set(testResourceID, testLockID, time.Duration(testTTL)*time.Second)
 	}
 	ttl, err := redlock.Lock(testResourceID, testLockID, testTTL)
-	assert.Equal(t, int(ttl), 0, "ttl should be 0")
+	assert.Equal(t, 0, int(ttl), "ttl should be 0")
 	assert.Error(t, err, "redlock should return an error")
 }
 
@@ -86,7 +87,7 @@ func TestRedlock_Unlock(t *testing.T) {
 		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
 	}
 	for _, client := range redlock.clients {
-		client.Set(testResourceID, testLockID, testTTL)
+		client.Set(testResourceID, testLockID, time.Duration(testTTL)*time.Second)
 	}
 
 	err = redlock.Unlock(testResourceID, testLockID)
@@ -109,7 +110,7 @@ func TestRedlock_UnlockFailQuorum(t *testing.T) {
 		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
 	}
 	for _, client := range redlock.clients {
-		client.Set(testResourceID, testLockID, testTTL)
+		client.Set(testResourceID, testLockID, time.Duration(testTTL)*time.Second)
 	}
 	// Mocking responses for the second and third client
 	redlock.clients[1].(*redismock.ClientMock).
@@ -130,7 +131,7 @@ func TestRedlock_Refresh(t *testing.T) {
 		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
 	}
 	for _, client := range redlock.clients {
-		client.Set(testResourceID, testLockID, testTTL)
+		client.Set(testResourceID, testLockID, time.Duration(testTTL)*time.Second)
 	}
 
 	ttl, err := redlock.Refresh(testResourceID, testLockID, testTTL)
@@ -154,14 +155,14 @@ func TestRedlock_RefreshFailQuorum(t *testing.T) {
 		t.Fatal(fmt.Sprintf("could not create redlock instance: %s", err.Error()))
 	}
 
-	redlock.clients[0].Set(testResourceID, testLockID, time.Duration(testTTL)*time.Millisecond)
+	redlock.clients[0].Set(testResourceID, testLockID, time.Duration(testTTL)*time.Second)
 
 	// Mocking responses for the second and third client
 	redlock.clients[1].(*redismock.ClientMock).
-		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Millisecond).
+		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Second).
 		Return(redis.NewStatusResult("0", nil))
 	redlock.clients[2].(*redismock.ClientMock).
-		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Millisecond).
+		On("Set", testResourceID, testLockID, time.Duration(testTTL)*time.Second).
 		Return(redis.NewStatusResult("0", nil))
 
 	ttl, err := redlock.Refresh(testResourceID, testLockID, testTTL)

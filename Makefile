@@ -95,12 +95,17 @@ deps: ; $(info $(M) installing dependencies...) @ ## Installs dependencies
 .PHONY: gen
 gen: deps ; $(info $(M) generating code...) @ ## Generated protobuf code
 	$Q ./scripts/generate.sh
+
 # Misc
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
 	@rm -rf $(BIN)
 	@rm -rf test/tests.* test/coverage.*
+
+.PHONY: redis
+redis: ; $(info $(M) starting redis...) @ ## Start redis in docker container
+	$Q ./scripts/start-redis.sh
 
 .PHONY: help
 help:

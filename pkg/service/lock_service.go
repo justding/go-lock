@@ -1,8 +1,7 @@
-package grpc
+package service
 
 import (
 	"context"
-	"github.com/go-redis/redis"
 	pb "github.com/stoex/go-lock/internal/generated"
 	"github.com/stoex/go-lock/pkg/redlock"
 )
@@ -10,7 +9,6 @@ import (
 // LockService represents a grpc service handler
 type LockService struct {
 	redlock *redlock.Redlock
-	redis   []*redis.Client
 }
 
 // NewLockService returns a pointer to a LockService instance.
@@ -23,7 +21,6 @@ func NewLockService(addr []string) (*LockService, error) {
 		return nil, err
 	}
 
-	service.redis = clients
 	service.redlock = redlock.NewRedlock()
 
 	for _, c := range clients {

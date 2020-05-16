@@ -31,4 +31,5 @@ service Lock {
   rpc GetLock(LockRequest) returns (LockResponse) {};
   rpc RefreshLock(LockRequest) returns (LockResponse) {};
   rpc DeleteLock(LockRequest) returns (LockResponse) {};
+  rpc CheckLock(LockRequest) returns (LockResponse) {};
 }
