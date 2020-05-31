@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/stoex/go-lock/internal/config"
 	pb "github.com/stoex/go-lock/internal/generated"
-	"github.com/stoex/go-lock/pkg/service"
+	"github.com/stoex/go-lock/internal/logger"
+	"github.com/stoex/go-lock/internal/service"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -33,11 +34,12 @@ var (
 )
 
 func main() {
-	log.Printf("go-lock :: version %s :: build date %s", Version, BuildDate)
 	flag.Parse()
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
+
+	logger.Info(ctx, fmt.Sprintf("go-lock :: version %s :: build date %s", Version, BuildDate))
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -81,7 +83,7 @@ func main() {
 
 	select {
 	case <-interrupt:
-		log.Println("received shutdown signal")
+		logger.Info(ctx, "received shutdown signal")
 		break
 	case <-ctx.Done():
 		break
@@ -89,7 +91,7 @@ func main() {
 
 	cancel()
 
-	_, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_, shutdownCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer shutdownCancel()
 
 	if grpcServer != nil {
@@ -99,7 +101,7 @@ func main() {
 	err := g.Wait()
 
 	if err != nil {
-		log.Printf("server returning an error: %v", err.Error())
+		logger.Error(ctx, fmt.Sprintf("server returning an error: %v", err.Error()))
 		os.Exit(2)
 	}
 }

@@ -14,6 +14,7 @@ require (
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/yuin/gopher-lua v0.0.0-20191220021717-ab39c6098bdb // indirect
+	go.uber.org/zap v1.15.0
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0

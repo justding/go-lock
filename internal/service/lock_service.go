@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/stoex/go-lock/internal/generated"
+	"github.com/stoex/go-lock/internal/logger"
 	"github.com/stoex/go-lock/pkg/redlock"
 )
 
@@ -34,11 +36,16 @@ func NewLockService(addr []string) (*LockService, error) {
 
 // GetLock is responsible for aquiring a resource lock
 func (s *LockService) GetLock(ctx context.Context, req *pb.LockRequest) (*pb.LockResponse, error) {
+	logger.Info(ctx, fmt.Sprintf("<- get :: resource %s :: lock-id %s :: ttl %d", req.ResourceId, req.LockId, req.Ttl))
+
 	ttl, err := s.redlock.Lock(req.ResourceId, req.LockId, int(req.Ttl))
 
 	if err != nil {
+		logger.Error(ctx, "-> get fail")
 		return nil, err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("-> get ok, ttl: %d", ttl))
 
 	return &pb.LockResponse{
 		Status:     1,
@@ -50,11 +57,16 @@ func (s *LockService) GetLock(ctx context.Context, req *pb.LockRequest) (*pb.Loc
 
 // RefreshLock is responsible for refreshing / extending a resource lock
 func (s *LockService) RefreshLock(ctx context.Context, req *pb.LockRequest) (*pb.LockResponse, error) {
+	logger.Info(ctx, fmt.Sprintf("<- refresh :: resource %s :: lock-id %s :: ttl %d", req.ResourceId, req.LockId, req.Ttl))
+
 	ttl, err := s.redlock.Refresh(req.ResourceId, req.LockId, int(req.Ttl))
 
 	if err != nil {
+		logger.Error(ctx, "-> refresh fail")
 		return nil, err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("-> refresh ok, ttl: %d", ttl))
 
 	return &pb.LockResponse{
 		Status:     1,
@@ -66,11 +78,16 @@ func (s *LockService) RefreshLock(ctx context.Context, req *pb.LockRequest) (*pb
 
 // DeleteLock is responsible for deleting / removing a resource lock
 func (s *LockService) DeleteLock(ctx context.Context, req *pb.LockRequest) (*pb.LockResponse, error) {
+	logger.Info(ctx, fmt.Sprintf("<- delete :: resource %s :: lock-id %s", req.ResourceId, req.LockId))
+
 	err := s.redlock.Unlock(req.ResourceId, req.LockId)
 
 	if err != nil {
+		logger.Error(ctx, "-> delete fail")
 		return nil, err
 	}
+
+	logger.Info(ctx, "-> delete ok")
 
 	return &pb.LockResponse{
 		Status: 1,
@@ -79,11 +96,16 @@ func (s *LockService) DeleteLock(ctx context.Context, req *pb.LockRequest) (*pb.
 
 // CheckLock returns information about a lock
 func (s *LockService) CheckLock(ctx context.Context, req *pb.LockRequest) (*pb.LockResponse, error) {
+	logger.Info(ctx, fmt.Sprintf("<- check :: resource: %s", req.ResourceId))
+
 	l, err := s.redlock.Check(req.ResourceId)
 
 	if err != nil {
+		logger.Error(ctx, "-> check fail")
 		return nil, err
 	}
+
+	logger.Info(ctx, fmt.Sprintf("-> check ok :: resource %s :: lock-id %s :: ttl %d", l.Resource, l.ID, l.TTL))
 
 	return &pb.LockResponse{
 		Status:     1,
